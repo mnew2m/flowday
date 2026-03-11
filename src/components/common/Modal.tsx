@@ -28,8 +28,8 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       {/* Sheet */}
       <div
         className="relative w-full animate-slide-up max-h-[92dvh] flex flex-col rounded-t-[20px] overflow-hidden safe-bottom"
-        style={{ maxWidth: '480px' }}
         style={{
+          maxWidth: '480px',
           background: 'var(--color-background)',
           boxShadow: 'var(--shadow-modal)',
         }}
