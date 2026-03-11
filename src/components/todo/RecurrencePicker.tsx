@@ -1,3 +1,7 @@
+import { useState } from 'react'
+import { format, parseISO } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import { DatePickerSheet } from '../common/DatePickerSheet'
 import type { Recurrence } from '../../types'
 
 interface RecurrencePickerProps {
@@ -9,6 +13,9 @@ const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
 
 export function RecurrencePicker({ value, onChange }: RecurrencePickerProps) {
   const update = (partial: Partial<Recurrence>) => onChange({ ...value, ...partial })
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false)
+
+  const endDateValue = value.endDate ? value.endDate.substring(0, 10) : ''
 
   return (
     <div className="space-y-3">
@@ -75,23 +82,40 @@ export function RecurrencePicker({ value, onChange }: RecurrencePickerProps) {
       {/* End date */}
       {value.type !== 'none' && (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted">종료일</span>
-          <input
-            type="date"
-            value={value.endDate ? value.endDate.substring(0, 10) : ''}
-            onChange={e => update({ endDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
-            className="flex-1 px-2 py-1.5 bg-input border border-border rounded-lg text-sm text-primary"
-          />
+          <span className="text-xs text-muted flex-shrink-0">종료일</span>
+          <button
+            type="button"
+            onClick={() => setShowEndDatePicker(true)}
+            className="flex-1 px-3 py-1.5 rounded-lg text-sm text-left transition-opacity active:opacity-50"
+            style={{
+              background: 'var(--color-fill)',
+              color: value.endDate ? 'var(--color-accent)' : 'var(--color-muted)',
+            }}
+          >
+            {value.endDate
+              ? format(parseISO(endDateValue), 'yyyy년 M월 d일 (E)', { locale: ko })
+              : '날짜 없음'}
+          </button>
           {value.endDate && (
             <button
               onClick={() => update({ endDate: undefined })}
-              className="text-xs text-muted hover:text-red-400"
+              className="text-xs flex-shrink-0 transition-opacity active:opacity-50"
+              style={{ color: 'var(--color-muted)' }}
             >
               지우기
             </button>
           )}
         </div>
       )}
+
+      <DatePickerSheet
+        open={showEndDatePicker}
+        onClose={() => setShowEndDatePicker(false)}
+        value={endDateValue}
+        onChange={v => update({ endDate: v ? new Date(v).toISOString() : undefined })}
+        mode="date"
+        title="종료일"
+      />
     </div>
   )
 }
