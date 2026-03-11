@@ -25,31 +25,41 @@ export function TodosPage() {
   const [viewMode, setViewMode]   = useState<ViewMode>('list')
   const [formOpen, setFormOpen]   = useState(false)
   const [editTodo, setEditTodo]   = useState<Todo | null>(null)
+  const [sessionCompleted, setSessionCompleted] = useState<Set<string>>(new Set())
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
   const filtered = useMemo(() => {
+    const show = (t: Todo) => !t.completed || sessionCompleted.has(t.id)
     switch (filter) {
       case 'today':
-        return todos.filter(t =>
-          !t.completed && t.dueDate && (t.dueDate.startsWith(todayStr) || isToday(parseISO(t.dueDate)))
-        )
+        return todos.filter(t => show(t) && t.dueDate && t.dueDate.startsWith(todayStr))
       case 'all':
-        return todos.filter(t => !t.completed)
+        return todos.filter(t => show(t))
       case 'upcoming':
-        return todos.filter(t => !t.completed && t.dueDate && isFuture(parseISO(t.dueDate)) && !isToday(parseISO(t.dueDate)))
+        return todos.filter(t => show(t) && t.dueDate && isFuture(parseISO(t.dueDate)) && !isToday(parseISO(t.dueDate)))
       case 'someday':
-        return todos.filter(t => !t.completed && !t.dueDate)
+        return todos.filter(t => show(t) && !t.dueDate)
       case 'done':
         return todos.filter(t => t.completed)
       default:
         return todos
     }
-  }, [todos, filter, todayStr])
+  }, [todos, filter, todayStr, sessionCompleted])
 
   const overdueCount = todos.filter(t =>
     !t.completed && t.dueDate && isPast(parseISO(t.dueDate)) && !isToday(parseISO(t.dueDate))
   ).length
+
+  const handleComplete = (id: string) => {
+    completeTodo(id)
+    setSessionCompleted(prev => new Set([...prev, id]))
+  }
+
+  const handleUncomplete = (id: string) => {
+    uncompleteTodo(id)
+    setSessionCompleted(prev => { const s = new Set(prev); s.delete(id); return s })
+  }
 
   const handleEdit = (todo: Todo) => { setEditTodo(todo); setFormOpen(true) }
 
@@ -176,8 +186,8 @@ export function TodosPage() {
         <CalendarView
           todos={todos}
           categories={categories}
-          onComplete={completeTodo}
-          onUncomplete={uncompleteTodo}
+          onComplete={handleComplete}
+          onUncomplete={handleUncomplete}
           onDelete={deleteTodo}
           onEdit={handleEdit}
           onAdd={openAdd}
@@ -187,8 +197,8 @@ export function TodosPage() {
           <TodoList
             todos={filtered}
             categories={categories}
-            onComplete={completeTodo}
-            onUncomplete={uncompleteTodo}
+            onComplete={handleComplete}
+            onUncomplete={handleUncomplete}
             onDelete={deleteTodo}
             onEdit={handleEdit}
             onAdd={openAdd}
