@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#7c3aed"/>
+  <!-- Checkmark circle (todo) -->
+  <circle cx="24" cy="26" r="9" fill="none" stroke="white" stroke-width="3"/>
+  <polyline points="20,26 23,29 28,22" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Habit flame -->
+  <path d="M36 42 C36 37 40 35 39 30 C41 32 43 35 43 39 C43 43.4 39.9 47 36 47 C32.1 47 29 43.4 29 39 C29 37 30 35 31 34 C31 37 33 39 36 42Z" fill="white" opacity="0.9"/>
+</svg>
