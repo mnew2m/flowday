@@ -14,7 +14,7 @@ export function EmptyState({ icon, title, description, action, compact }: EmptyS
       <p className={`text-secondary mt-1 leading-relaxed ${compact ? 'text-[12px]' : 'text-[14px] mt-1.5'}`}>{description}</p>
       {action && (
         <button
-          onClick={action.onClick}
+          onClick={() => action.onClick()}
           className="mt-6 px-6 py-2.5 rounded-xl text-[15px] font-semibold text-white transition-opacity active:opacity-70"
           style={{ background: 'var(--color-accent)' }}
         >
