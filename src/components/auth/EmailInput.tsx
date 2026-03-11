@@ -82,7 +82,7 @@ export function EmailInput({ value, onChange }: EmailInputProps) {
         onChange={e => setLocalPart(e.target.value.replace(/[@\s]/g, ''))}
         placeholder="아이디"
         required
-        className="flex-1 min-w-0 px-4 py-3 text-[16px] text-primary placeholder:text-muted outline-none"
+        className="w-[35%] min-w-0 px-4 py-3 text-[16px] text-primary placeholder:text-muted outline-none"
         style={{ background: 'transparent' }}
       />
 
@@ -94,7 +94,7 @@ export function EmailInput({ value, onChange }: EmailInputProps) {
         ref={triggerRef}
         type="button"
         onClick={handleOpen}
-        className="flex items-center gap-1 px-3 py-3 text-[16px] min-w-[130px] transition-opacity active:opacity-60"
+        className="flex flex-1 items-center gap-1 px-3 py-3 text-[16px] min-w-0 transition-opacity active:opacity-60"
       >
         <span className={`flex-1 text-left ${domain ? 'text-primary' : 'text-muted'}`}>
           {domain || '도메인 선택'}
