@@ -47,11 +47,22 @@ export function EmailInput({ value, onChange }: EmailInputProps) {
   const handleOpen = () => {
     if (!triggerRef.current) return
     const rect = triggerRef.current.getBoundingClientRect()
+    const dropdownWidth = Math.max(rect.width, 200)
+    const dropdownHeight = 300 // 드롭다운 최대 높이 근사값
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    // 오른쪽 넘침 방지
+    const left = Math.min(rect.left, vw - dropdownWidth - 10)
+    // 아래 넘침 시 위로 표시
+    const fitsBelow = rect.bottom + dropdownHeight < vh - 10
+    const top = fitsBelow ? rect.bottom + 6 : rect.top - dropdownHeight - 6
+
     setDropdownStyle({
       position: 'fixed',
-      top: rect.bottom + 6,
-      left: rect.left,
-      width: Math.max(rect.width, 200),
+      top: Math.max(10, top),
+      left: Math.max(10, left),
+      width: dropdownWidth,
       zIndex: 9999,
     })
     setOpen(o => !o)
