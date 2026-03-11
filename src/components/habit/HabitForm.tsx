@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Modal } from '../common/Modal'
+import { DatePickerSheet } from '../common/DatePickerSheet'
 import { RecurrencePicker } from '../todo/RecurrencePicker'
 import { CategoryPicker } from '../common/CategoryPicker'
 import type { Habit, Recurrence, Category } from '../../types'
@@ -26,15 +27,17 @@ const PRESET_COLORS = [
 
 const defaultRecurrence: Recurrence = { type: 'daily', interval: 1 }
 
+const inputCls = 'w-full px-4 py-3 text-[16px] text-primary placeholder:text-muted outline-none'
+
 export function HabitForm({ open, onClose, onSubmit, categories, initialValues }: HabitFormProps) {
-  const [title, setTitle] = useState(initialValues?.title ?? '')
+  const [title,       setTitle]       = useState(initialValues?.title ?? '')
   const [description, setDescription] = useState(initialValues?.description ?? '')
-  const [color, setColor] = useState(initialValues?.color ?? PRESET_COLORS[0])
-  const [categoryId, setCategoryId] = useState(initialValues?.categoryId)
-  const [recurrence, setRecurrence] = useState<Recurrence>(
-    initialValues?.recurrence ?? defaultRecurrence
-  )
+  const [color,       setColor]       = useState(initialValues?.color ?? PRESET_COLORS[0])
+  const [categoryId,  setCategoryId]  = useState(initialValues?.categoryId)
+  const [recurrence,  setRecurrence]  = useState<Recurrence>(initialValues?.recurrence ?? defaultRecurrence)
   const [reminderTime, setReminderTime] = useState(initialValues?.reminderTime ?? '')
+  const [showTimePicker, setShowTimePicker] = useState(false)
+  const [showRecurrence, setShowRecurrence] = useState(false)
 
   const handleSubmit = () => {
     if (!title.trim()) return
@@ -49,73 +52,131 @@ export function HabitForm({ open, onClose, onSubmit, categories, initialValues }
     onClose()
   }
 
+  const sectionStyle = { background: 'var(--color-card)', borderRadius: '12px', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }
+  const rowStyle = { borderBottom: '0.5px solid var(--color-separator)' }
+
   return (
+    <>
     <Modal open={open} onClose={onClose} title={initialValues ? '습관 수정' : '새 습관'}>
-      <div className="p-4 space-y-4">
-        <input
-          autoFocus
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          placeholder="습관 이름"
-          className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-primary placeholder:text-muted outline-none focus:border-accent transition-colors"
-        />
+      <div className="px-4 pt-3 pb-6 space-y-4">
 
-        <textarea
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          placeholder="설명 (선택)"
-          rows={2}
-          className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-primary placeholder:text-muted outline-none focus:border-accent transition-colors resize-none"
-        />
+        {/* Title + Description */}
+        <div style={sectionStyle}>
+          <div style={rowStyle}>
+            <input
+              autoFocus
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="습관 이름"
+              className={inputCls}
+              style={{ background: 'transparent' }}
+            />
+          </div>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="설명 (선택)"
+            rows={2}
+            className={`${inputCls} resize-none`}
+            style={{ background: 'transparent' }}
+          />
+        </div>
 
-        {/* Color picker */}
-        <div>
-          <label className="text-xs font-medium text-muted mb-2 block">색상</label>
-          <div className="flex gap-2 flex-wrap">
-            {PRESET_COLORS.map(c => (
-              <button
-                key={c}
-                onClick={() => setColor(c)}
-                className={`w-8 h-8 rounded-full transition-transform ${
-                  color === c ? 'ring-2 ring-offset-2 ring-offset-card scale-110' : ''
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
+        {/* Color */}
+        <div style={sectionStyle}>
+          <div className="px-4 py-3">
+            <p className="text-[12px] font-semibold uppercase tracking-wider text-secondary mb-2.5">색상</p>
+            <div className="flex gap-2.5 flex-wrap">
+              {PRESET_COLORS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className="w-8 h-8 rounded-full transition-transform active:scale-90"
+                  style={{
+                    backgroundColor: c,
+                    outline: color === c ? `2px solid ${c}` : 'none',
+                    outlineOffset: '2px',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Reminder */}
+        <div style={sectionStyle}>
+          <div className="flex items-center px-4 py-3">
+            <span className="text-[16px] text-primary flex-1">알림</span>
+            <button
+              type="button"
+              onClick={() => setShowTimePicker(true)}
+              className="text-[15px] transition-opacity active:opacity-50"
+              style={{ color: reminderTime ? 'var(--color-accent)' : 'var(--color-muted)' }}
+            >
+              {reminderTime ? `매일 ${reminderTime}` : '설정 안 함'}
+            </button>
           </div>
         </div>
 
         {/* Category */}
-        <div>
-          <label className="text-xs font-medium text-muted mb-1.5 block">카테고리</label>
-          <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
-        </div>
+        {categories.length > 0 && (
+          <div style={sectionStyle}>
+            <div className="px-4 py-3">
+              <p className="text-[12px] font-semibold uppercase tracking-wider text-secondary mb-2">카테고리</p>
+              <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+            </div>
+          </div>
+        )}
 
         {/* Recurrence */}
-        <div>
-          <label className="text-xs font-medium text-muted mb-1.5 block">반복</label>
-          <RecurrencePicker value={recurrence} onChange={setRecurrence} />
+        <div style={sectionStyle}>
+          <button
+            onClick={() => setShowRecurrence(!showRecurrence)}
+            className="w-full flex items-center justify-between px-4 py-3 transition-opacity active:opacity-50"
+          >
+            <span className="text-[16px] text-primary">반복</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[15px]" style={{ color: 'var(--color-accent)' }}>
+                {{ daily: '매일', weekly: '매주', monthly: '매월', custom: '커스텀', none: '없음' }[recurrence.type]}
+              </span>
+              <svg
+                className={`w-4 h-4 transition-transform ${showRecurrence ? 'rotate-180' : ''}`}
+                style={{ color: 'var(--color-muted)' }}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </button>
+          {showRecurrence && (
+            <div className="px-4 pb-3" style={{ borderTop: '0.5px solid var(--color-separator)' }}>
+              <div className="pt-3">
+                <RecurrencePicker value={recurrence} onChange={setRecurrence} />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Reminder */}
-        <div>
-          <label className="text-xs font-medium text-muted mb-1.5 block">알림 시간</label>
-          <input
-            type="time"
-            value={reminderTime}
-            onChange={e => setReminderTime(e.target.value)}
-            className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-primary outline-none focus:border-accent transition-colors"
-          />
-        </div>
-
+        {/* Submit */}
         <button
           onClick={handleSubmit}
           disabled={!title.trim()}
-          className="w-full py-3 bg-accent text-white rounded-xl text-sm font-semibold disabled:opacity-40"
+          className="w-full py-3.5 rounded-xl text-[16px] font-semibold text-white transition-opacity active:opacity-70 disabled:opacity-40"
+          style={{ background: 'var(--color-accent)' }}
         >
           {initialValues ? '수정 완료' : '추가'}
         </button>
       </div>
     </Modal>
+
+    <DatePickerSheet
+      open={showTimePicker}
+      onClose={() => setShowTimePicker(false)}
+      value={reminderTime}
+      onChange={setReminderTime}
+      mode="time"
+      title="알림 시간"
+    />
+    </>
   )
 }

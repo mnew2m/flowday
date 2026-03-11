@@ -14,9 +14,9 @@ const MINUTES  = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '5
 interface DatePickerSheetProps {
   open: boolean
   onClose: () => void
-  value: string          // 'yyyy-MM-dd' (date) or ISO string (datetime) or ''
+  value: string          // 'yyyy-MM-dd' (date) | ISO string (datetime) | 'HH:mm' (time) | ''
   onChange: (v: string) => void
-  mode?: 'date' | 'datetime'
+  mode?: 'date' | 'datetime' | 'time'
   title?: string
 }
 
@@ -36,6 +36,11 @@ export function DatePickerSheet({
   })
 
   const handleConfirm = () => {
+    if (mode === 'time') {
+      onChange(`${hour}:${minute}`)
+      onClose()
+      return
+    }
     if (!selected) { onClose(); return }
     if (mode === 'datetime') {
       const d = new Date(selected)
@@ -70,10 +75,11 @@ export function DatePickerSheet({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title ?? (mode === 'datetime' ? '날짜 & 시간' : '날짜 선택')}>
+    <Modal open={open} onClose={onClose} title={title ?? (mode === 'datetime' ? '날짜 & 시간' : mode === 'time' ? '알림 시간' : '날짜 선택')}>
       <div className="px-4 pt-5 pb-6 space-y-4">
 
-        {/* Month navigation */}
+        {/* Month navigation + Calendar — time 모드에서는 숨김 */}
+        {mode !== 'time' && <>
         <div className="flex items-center justify-between">
           <button
             onClick={() => setMonth(m => subMonths(m, 1))}
@@ -163,9 +169,10 @@ export function DatePickerSheet({
             })}
           </div>
         </div>
+        </>}
 
         {/* Time picker */}
-        {mode === 'datetime' && (
+        {(mode === 'datetime' || mode === 'time') && (
           <div
             className="flex items-center justify-center gap-2 py-4 rounded-2xl"
             style={{ background: 'var(--color-fill)' }}
@@ -181,7 +188,11 @@ export function DatePickerSheet({
         )}
 
         {/* Selected display */}
-        {selected && (
+        {mode === 'time' ? (
+          <p className="text-center text-[14px] font-medium" style={{ color: 'var(--color-accent)' }}>
+            매일 {hour}:{minute}에 알림
+          </p>
+        ) : selected && (
           <p className="text-center text-[14px] font-medium" style={{ color: 'var(--color-accent)' }}>
             {mode === 'datetime'
               ? `${format(selected, 'yyyy년 M월 d일 (E)', { locale: ko })} ${hour}:${minute}`
@@ -191,14 +202,16 @@ export function DatePickerSheet({
 
         {/* Buttons */}
         <div className="flex gap-2">
-          <button
-            onClick={handleResetToToday}
-            disabled={isSelectedToday}
-            className="flex-1 py-3 rounded-xl text-[15px] font-medium text-secondary border transition-opacity active:opacity-50 disabled:opacity-30"
-            style={{ borderColor: 'var(--color-separator)' }}
-          >
-            오늘로
-          </button>
+          {mode !== 'time' && (
+            <button
+              onClick={handleResetToToday}
+              disabled={isSelectedToday}
+              className="flex-1 py-3 rounded-xl text-[15px] font-medium text-secondary border transition-opacity active:opacity-50 disabled:opacity-30"
+              style={{ borderColor: 'var(--color-separator)' }}
+            >
+              오늘로
+            </button>
+          )}
           <button
             onClick={handleConfirm}
             disabled={!selected}
