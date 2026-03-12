@@ -14,7 +14,9 @@ type ViewMode = 'list' | 'calendar'
 
 const MONTH_LABELS_SHORT = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']
 
-function RangeMonthPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function RangeMonthPicker({ label, value, onChange, min, max }: {
+  label: string; value: string; onChange: (v: string) => void; min?: string; max?: string
+}) {
   const [open, setOpen] = useState(false)
   const [pickerYear, setPickerYear] = useState(() => parseInt(value.substring(0, 4), 10))
   const date = parse(value, 'yyyy-MM', new Date())
@@ -24,7 +26,9 @@ function RangeMonthPicker({ label, value, onChange }: { label: string; value: st
 
   const handleOpen = () => { setPickerYear(selectedYear); setOpen(true) }
   const handleSelect = (monthIndex: number) => {
-    onChange(format(new Date(pickerYear, monthIndex, 1), 'yyyy-MM'))
+    const ym = format(new Date(pickerYear, monthIndex, 1), 'yyyy-MM')
+    if ((min && ym < min) || (max && ym > max)) return
+    onChange(ym)
     setOpen(false)
   }
 
@@ -73,17 +77,21 @@ function RangeMonthPicker({ label, value, onChange }: { label: string; value: st
           {/* 월 그리드 */}
           <div className="grid grid-cols-3 gap-1.5">
             {MONTH_LABELS_SHORT.map((lbl, i) => {
+              const ym = format(new Date(pickerYear, i, 1), 'yyyy-MM')
+              const isDisabled = (!!min && ym < min) || (!!max && ym > max)
               const isSelected = pickerYear === selectedYear && i === selectedMonth
               const isThisMonth = pickerYear === today.getFullYear() && i === today.getMonth()
               return (
                 <button
                   key={i}
                   onClick={() => handleSelect(i)}
+                  disabled={isDisabled}
                   className="py-2 rounded-lg text-[13px] font-medium transition-all active:scale-95"
                   style={{
-                    background: isSelected ? 'var(--color-accent)' : isThisMonth ? 'color-mix(in srgb, var(--color-accent) 12%, transparent)' : 'var(--color-fill)',
-                    color: isSelected ? 'white' : isThisMonth ? 'var(--color-accent)' : 'var(--color-primary)',
+                    background: isDisabled ? 'transparent' : isSelected ? 'var(--color-accent)' : isThisMonth ? 'color-mix(in srgb, var(--color-accent) 12%, transparent)' : 'var(--color-fill)',
+                    color: isDisabled ? 'var(--color-border)' : isSelected ? 'white' : isThisMonth ? 'var(--color-accent)' : 'var(--color-primary)',
                     fontWeight: isSelected || isThisMonth ? 600 : 400,
+                    cursor: isDisabled ? 'default' : 'pointer',
                   }}
                 >
                   {lbl}
@@ -113,7 +121,6 @@ export function TodosPage() {
   const [formOpen, setFormOpen]   = useState(false)
   const [editTodo, setEditTodo]   = useState<Todo | null>(null)
   const [sessionCompleted, setSessionCompleted] = useState<Set<string>>(new Set())
-  const [doneSortKey, setDoneSortKey] = useState<'completedAt' | 'dueDate'>('completedAt')
   const [doneSortDir, setDoneSortDir] = useState<'desc' | 'asc'>('desc')
   const currentYM = format(new Date(), 'yyyy-MM')
   const [doneRangeStart, setDoneRangeStart] = useState(currentYM)
@@ -144,7 +151,7 @@ export function TodosPage() {
       case 'done': {
         const done = todos.filter(t => {
           if (!t.completed) return false
-          const dateVal = doneSortKey === 'completedAt' ? t.completedAt : t.dueDate
+          const dateVal = t.dueDate
           if (!dateVal) return doneNoDate
           const ym = dateVal.substring(0, 7)
           const s = doneRangeStart <= doneRangeEnd ? doneRangeStart : doneRangeEnd
@@ -153,15 +160,16 @@ export function TodosPage() {
         })
         const dir = doneSortDir === 'desc' ? 1 : -1
         return [...done].sort((a, b) => {
-          const va = (doneSortKey === 'completedAt' ? a.completedAt : a.dueDate) ?? ''
-          const vb = (doneSortKey === 'completedAt' ? b.completedAt : b.dueDate) ?? ''
-          return vb.localeCompare(va) * dir
+          if (!a.dueDate && !b.dueDate) return 0
+          if (!a.dueDate) return 1
+          if (!b.dueDate) return -1
+          return b.dueDate.localeCompare(a.dueDate) * dir
         })
       }
       default:
         return todos
     }
-  }, [todos, filter, todayStr, sessionCompleted, doneSortKey, doneSortDir, doneRangeStart, doneRangeEnd, doneNoDate])
+  }, [todos, filter, todayStr, sessionCompleted, doneSortDir, doneRangeStart, doneRangeEnd, doneNoDate])
 
   const pinSort = (a: typeof filtered[0], b: typeof filtered[0]) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
 
@@ -182,8 +190,7 @@ export function TodosPage() {
     const groups: { label: string; todos: Todo[] }[] = []
     const map = new Map<string, Todo[]>()
     for (const t of filtered) {
-      const dateStr = doneSortKey === 'completedAt' ? t.completedAt : t.dueDate
-      const key = dateStr ? dateStr.substring(0, 7) : '날짜 없음'
+      const key = t.dueDate ? t.dueDate.substring(0, 7) : '날짜 없음'
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(t)
     }
@@ -194,7 +201,7 @@ export function TodosPage() {
       groups.push({ label, todos })
     }
     return groups
-  }, [filtered, filter, doneSortKey])
+  }, [filtered, filter])
 
   const overdueCount = todos.filter(t =>
     !t.completed && t.dueDate && isPast(parseISO(t.dueDate)) && !isToday(parseISO(t.dueDate))
@@ -424,68 +431,48 @@ export function TodosPage() {
         {/* 완료 탭 정렬 + 범위 필터 */}
         {viewMode === 'list' && filter === 'done' && !searchOpen && (
           <>
-            <div className="flex gap-2 mt-2 px-0">
-              {([
-                { id: 'completedAt', label: '완료 한 날짜순' },
-                { id: 'dueDate',     label: '계획 한 날짜순' },
-              ] as const).map(s => {
-                const isActive = doneSortKey === s.id
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => {
-                      if (isActive) setDoneSortDir(d => d === 'desc' ? 'asc' : 'desc')
-                      else { setDoneSortKey(s.id); setDoneSortDir('desc') }
-                    }}
-                    className="flex items-center gap-1 text-[12px] font-medium px-3 py-1 rounded-full transition-all active:scale-95"
-                    style={
-                      isActive
-                        ? { background: 'var(--color-accent)', color: 'white' }
-                        : { background: 'var(--color-fill)', color: 'var(--color-secondary)' }
-                    }
-                  >
-                    {s.label}
-                    {isActive && (
-                      <svg
-                        width="10" height="10" viewBox="0 0 24 24" fill="none"
-                        className={`transition-transform ${doneSortDir === 'asc' ? 'rotate-180' : ''}`}
-                      >
-                        <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </button>
-                )
-              })}
+            <div className="flex items-center justify-between mt-2 px-0">
+              {/* 범위 표시 버튼 (좌측) */}
+              <button
+                onClick={() => {
+                  setTmpStart(doneRangeStart)
+                  setTmpEnd(doneRangeEnd)
+                  setTmpNoDate(doneNoDate)
+                  setDoneRangeOpen(true)
+                }}
+                className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1 rounded-full transition-all active:scale-95"
+                style={{ background: 'var(--color-fill)', color: 'var(--color-secondary)' }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                {(() => {
+                  const s = doneRangeStart <= doneRangeEnd ? doneRangeStart : doneRangeEnd
+                  const e = doneRangeStart <= doneRangeEnd ? doneRangeEnd : doneRangeStart
+                  const fmt = (ym: string) => format(parse(ym, 'yyyy-MM', new Date()), 'yyyy년 M월', { locale: ko })
+                  const label = s === e ? fmt(s) : `${fmt(s)} ~ ${fmt(e)}`
+                  return doneNoDate ? `${label} + 날짜 없음` : label
+                })()}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--color-muted)' }}>
+                  <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+
+              {/* 오름/내림차순 아이콘 버튼 (우측) */}
+              <button
+                onClick={() => setDoneSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-95"
+                style={{ background: 'var(--color-fill)', color: 'var(--color-secondary)' }}
+              >
+                <svg
+                  width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  style={{ transition: 'transform 0.2s', transform: doneSortDir === 'asc' ? 'rotate(180deg)' : 'none' }}
+                >
+                  <path d="M3 6h18M7 12h10M11 18h2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
             </div>
-            {/* 범위 표시 버튼 */}
-            <button
-              onClick={() => {
-                setTmpStart(doneRangeStart)
-                setTmpEnd(doneRangeEnd)
-                setTmpNoDate(doneNoDate)
-                setDoneRangeOpen(true)
-              }}
-              className="flex items-center gap-1.5 mt-2 text-[12px] font-medium px-3 py-1 rounded-full transition-all active:scale-95"
-              style={{ background: 'var(--color-fill)', color: 'var(--color-secondary)' }}
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              {(() => {
-                const s = doneRangeStart <= doneRangeEnd ? doneRangeStart : doneRangeEnd
-                const e = doneRangeStart <= doneRangeEnd ? doneRangeEnd : doneRangeStart
-                const fmt = (ym: string) => {
-                  const d = parse(ym, 'yyyy-MM', new Date())
-                  return format(d, 'yyyy년 M월', { locale: ko })
-                }
-                const label = s === e ? fmt(s) : `${fmt(s)} ~ ${fmt(e)}`
-                return doneNoDate ? `${label} + 날짜 없음` : label
-              })()}
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--color-muted)' }}>
-                <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
           </>
         )}
       </div>
@@ -661,9 +648,9 @@ export function TodosPage() {
       <Modal open={doneRangeOpen} onClose={() => setDoneRangeOpen(false)} title="기간 선택">
         <div className="px-4 pt-3 pb-6 space-y-5">
           {/* 시작 월 */}
-          <RangeMonthPicker label="시작 월" value={tmpStart} onChange={setTmpStart} />
+          <RangeMonthPicker label="시작 월" value={tmpStart} onChange={v => { setTmpStart(v); if (v > tmpEnd) setTmpEnd(v) }} max={tmpEnd} />
           {/* 종료 월 */}
-          <RangeMonthPicker label="종료 월" value={tmpEnd} onChange={setTmpEnd} />
+          <RangeMonthPicker label="종료 월" value={tmpEnd} onChange={v => { setTmpEnd(v); if (v < tmpStart) setTmpStart(v) }} min={tmpStart} />
           {/* 날짜 없음 토글 */}
           <button
             onClick={() => setTmpNoDate(v => !v)}
