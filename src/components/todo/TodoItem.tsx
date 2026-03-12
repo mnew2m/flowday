@@ -1,11 +1,10 @@
 import { useState, useRef } from 'react'
 import { ConfirmDialog } from '../common/ConfirmDialog'
 import { formatDate } from '../../utils/dateHelpers'
-import type { Todo, Category } from '../../types'
+import type { Todo } from '../../types'
 
 interface TodoItemProps {
   todo: Todo
-  categories: Category[]
   onComplete: (id: string) => void
   onUncomplete: (id: string) => void
   onDelete: (id: string) => void
@@ -17,7 +16,7 @@ interface TodoItemProps {
 const SWIPE_THRESHOLD = 72   // px: 이 이상 당기면 삭제 버튼 노출
 const SWIPE_CONFIRM   = 160  // px: 이 이상 당기면 바로 confirm 오픈
 
-export function TodoItem({ todo, categories, onComplete, onUncomplete, onDelete, onEdit, onCopy, isLast }: TodoItemProps) {
+export function TodoItem({ todo, onComplete, onUncomplete, onDelete, onEdit, onCopy, isLast }: TodoItemProps) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [translateX, setTranslateX] = useState(0)
   const [revealed, setRevealed] = useState(false)
@@ -27,7 +26,6 @@ export function TodoItem({ todo, categories, onComplete, onUncomplete, onDelete,
   const dragging  = useRef(false)
   const lockAxis  = useRef<'h' | 'v' | null>(null)
 
-  const category = categories.find(c => c.id === todo.categoryId)
   const isOverdue = !todo.completed && todo.dueDate && new Date(todo.dueDate) < new Date()
 
   const handleToggle = () => {
@@ -152,11 +150,6 @@ export function TodoItem({ todo, categories, onComplete, onUncomplete, onDelete,
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
               {todo.description && (
                 <span className="text-[13px] text-secondary line-clamp-1 w-full">{todo.description}</span>
-              )}
-              {category && (
-                <span className="text-[12px] font-medium" style={{ color: category.color }}>
-                  {category.icon} {category.name}
-                </span>
               )}
               {todo.dueDate && (
                 <span className={`text-[12px] ${isOverdue ? 'text-red-500' : 'text-secondary'}`}>

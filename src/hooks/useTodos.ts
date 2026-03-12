@@ -138,21 +138,22 @@ function toRow(todo: Todo) {
 
 function toPartialRow(input: Partial<Omit<Todo, 'id' | 'userId' | 'createdAt'>>) {
   const row: Record<string, unknown> = {}
-  if (input.categoryId !== undefined) row.category_id = input.categoryId
-  if (input.title !== undefined) row.title = input.title
-  if (input.description !== undefined) row.description = input.description
-  if (input.completed !== undefined) row.completed = input.completed
-  if (input.dueDate !== undefined) row.due_date = input.dueDate
-  if (input.completedAt !== undefined) row.completed_at = input.completedAt
-  if (input.reminderTime !== undefined) row.reminder_time = input.reminderTime
-  if (input.recurrence !== undefined) {
-    row.recurrence_type = input.recurrence.type
-    row.recurrence_interval = input.recurrence.interval
-    row.recurrence_days_of_week = input.recurrence.daysOfWeek
-    row.recurrence_day_of_month = input.recurrence.dayOfMonth
-    row.recurrence_end_date = input.recurrence.endDate
+  // 'key' in input 으로 체크해야 undefined(명시적 삭제)와 미전달을 구분할 수 있음
+  if ('categoryId'   in input) row.category_id   = input.categoryId   ?? null
+  if ('title'        in input) row.title          = input.title
+  if ('description'  in input) row.description    = input.description  ?? null
+  if ('completed'    in input) row.completed      = input.completed
+  if ('dueDate'      in input) row.due_date       = input.dueDate      ?? null
+  if ('completedAt'  in input) row.completed_at   = input.completedAt  ?? null
+  if ('reminderTime' in input) row.reminder_time  = input.reminderTime ?? null
+  if ('recurrence'   in input && input.recurrence) {
+    row.recurrence_type          = input.recurrence.type
+    row.recurrence_interval      = input.recurrence.interval
+    row.recurrence_days_of_week  = input.recurrence.daysOfWeek  ?? null
+    row.recurrence_day_of_month  = input.recurrence.dayOfMonth  ?? null
+    row.recurrence_end_date      = input.recurrence.endDate     ?? null
   }
-  if (input.parentId !== undefined) row.parent_id = input.parentId
-  if (input.tags !== undefined) row.tags = input.tags
+  if ('parentId' in input) row.parent_id = input.parentId ?? null
+  if ('tags'     in input) row.tags      = input.tags
   return row
 }

@@ -18,7 +18,7 @@ interface TodoListProps {
   emptyCompact?: boolean
 }
 
-export function TodoList({ todos, categories, onComplete, onUncomplete, onDelete, onEdit, onAdd, onCopy, hideAddAction, emptyIcon = '✅', emptyTitle = '할일이 없어요', emptyDescription = '새 할일을 추가해보세요', emptyCompact }: TodoListProps) {
+export function TodoList({ todos, categories: _categories, onComplete, onUncomplete, onDelete, onEdit, onAdd, onCopy, hideAddAction, emptyIcon = '✅', emptyTitle = '할일이 없어요', emptyDescription = '새 할일을 추가해보세요', emptyCompact }: TodoListProps) {
   if (todos.length === 0) {
     return (
       <EmptyState
@@ -40,7 +40,6 @@ export function TodoList({ todos, categories, onComplete, onUncomplete, onDelete
         <div key={todo.id} className="px-4">
           <TodoItem
             todo={todo}
-            categories={categories}
             onComplete={onComplete}
             onUncomplete={onUncomplete}
             onDelete={onDelete}
