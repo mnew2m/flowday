@@ -275,19 +275,59 @@ export function CalendarView({ todos, categories, onComplete, onUncomplete, onDe
           </button>
         </div>
 
-        <TodoList
-          todos={selectedTodos}
-          categories={categories}
-          onComplete={onComplete}
-          onUncomplete={onUncomplete}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          onAdd={() => onAdd(format(selectedDate, 'yyyy-MM-dd'))}
-          emptyIcon="📭"
-          emptyTitle="할일이 없어요"
-          emptyDescription={`${format(selectedDate, 'M월 d일', { locale: ko })}에 예정된 할일이 없습니다`}
-          emptyCompact
-        />
+        {selectedTodos.length === 0 ? (
+          <TodoList
+            todos={[]}
+            categories={categories}
+            onComplete={onComplete}
+            onUncomplete={onUncomplete}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            onAdd={() => onAdd(format(selectedDate, 'yyyy-MM-dd'))}
+            emptyIcon="📭"
+            emptyTitle="할일이 없어요"
+            emptyDescription={`${format(selectedDate, 'M월 d일', { locale: ko })}에 예정된 할일이 없습니다`}
+            emptyCompact
+          />
+        ) : (
+          <div className="space-y-3">
+            {(() => {
+              // 카테고리 순서대로 그룹핑: categories 순서 → 카테고리 없음 마지막
+              const noCategory = selectedTodos.filter(t => !t.categoryId)
+              const groups: { cat?: typeof categories[0]; todos: typeof selectedTodos }[] = []
+              for (const cat of categories) {
+                const catTodos = selectedTodos.filter(t => t.categoryId === cat.id)
+                if (catTodos.length > 0) groups.push({ cat, todos: catTodos })
+              }
+              if (noCategory.length > 0) groups.push({ todos: noCategory })
+              return groups.map(group => (
+                <div key={group.cat?.id ?? 'none'}>
+                  <div className="flex items-center gap-1.5 mb-1.5 px-1">
+                    {group.cat ? (
+                      <span className="text-[12px] font-semibold" style={{ color: group.cat.color }}>
+                        {group.cat.icon} {group.cat.name}
+                      </span>
+                    ) : (
+                      <span className="text-[12px] font-semibold" style={{ color: 'var(--color-muted)' }}>
+                        카테고리 없음
+                      </span>
+                    )}
+                  </div>
+                  <TodoList
+                    todos={group.todos}
+                    categories={categories}
+                    onComplete={onComplete}
+                    onUncomplete={onUncomplete}
+                    onDelete={onDelete}
+                    onEdit={onEdit}
+                    onAdd={() => onAdd(format(selectedDate, 'yyyy-MM-dd'))}
+                    hideAddAction
+                  />
+                </div>
+              ))
+            })()}
+          </div>
+        )}
       </div>
     </div>
   )
