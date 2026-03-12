@@ -353,8 +353,8 @@ export function TodosPage() {
                   </button>
                 </div>
 
-                {/* 추가 버튼 (캘린더뷰에서는 숨김) */}
-                {viewMode === 'list' && (
+                {/* 추가 버튼 (캘린더뷰, 완료탭에서는 숨김) */}
+                {viewMode === 'list' && filter !== 'done' && (
                   <button
                     onClick={() => openAdd()}
                     className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 active:opacity-70 shadow-card"
@@ -524,9 +524,10 @@ export function TodosPage() {
               onDelete={deleteTodo}
               onEdit={handleEdit}
               onAdd={openAdd}
+              hideAddAction
               emptyIcon="🎉"
               emptyTitle="완료한 할일이 없어요"
-              emptyDescription="새 할일을 추가해보세요"
+              emptyDescription="이 기간에 완료한 할일이 없습니다"
             />
           ) : (
             doneGroups.map(group => (

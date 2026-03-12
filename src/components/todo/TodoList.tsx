@@ -11,20 +11,21 @@ interface TodoListProps {
   onEdit: (todo: Todo) => void
   onAdd: () => void
   onCopy?: (todo: Todo) => void
+  hideAddAction?: boolean
   emptyIcon?: string
   emptyTitle?: string
   emptyDescription?: string
   emptyCompact?: boolean
 }
 
-export function TodoList({ todos, categories, onComplete, onUncomplete, onDelete, onEdit, onAdd, onCopy, emptyIcon = '✅', emptyTitle = '할일이 없어요', emptyDescription = '새 할일을 추가해보세요', emptyCompact }: TodoListProps) {
+export function TodoList({ todos, categories, onComplete, onUncomplete, onDelete, onEdit, onAdd, onCopy, hideAddAction, emptyIcon = '✅', emptyTitle = '할일이 없어요', emptyDescription = '새 할일을 추가해보세요', emptyCompact }: TodoListProps) {
   if (todos.length === 0) {
     return (
       <EmptyState
         icon={emptyIcon}
         title={emptyTitle}
         description={emptyDescription}
-        action={{ label: '할일 추가', onClick: onAdd }}
+        action={hideAddAction ? undefined : { label: '할일 추가', onClick: onAdd }}
         compact={emptyCompact}
       />
     )
