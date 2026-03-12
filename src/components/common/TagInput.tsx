@@ -32,7 +32,7 @@ export function TagInput({ tags, onChange }: TagInputProps) {
           key={tag}
           className="flex items-center gap-1 px-2 py-0.5 bg-accent/20 text-accent rounded-full text-xs font-medium"
         >
-          #{tag}
+          {tag}
           <button
             onClick={() => onChange(tags.filter(t => t !== tag))}
             className="hover:text-red-400 transition-colors"

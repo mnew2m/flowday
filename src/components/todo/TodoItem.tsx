@@ -172,7 +172,7 @@ export function TodoItem({ todo, onComplete, onUncomplete, onDelete, onEdit, onC
                   className="text-[11px] font-medium px-2 py-0.5 rounded-full"
                   style={{ background: 'var(--color-fill)', color: 'var(--color-secondary)' }}
                 >
-                  #{tag}
+                  {tag}
                 </span>
               ))}
             </div>
