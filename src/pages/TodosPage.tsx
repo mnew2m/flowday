@@ -219,6 +219,7 @@ export function TodosPage() {
         categories={categories}
         initialValues={editTodo ?? (prefilledDate ? { dueDate: prefilledDate } : undefined)}
         isEditing={!!editTodo}
+        somedayMode={!editTodo && filter === 'someday'}
       />
     </div>
   )

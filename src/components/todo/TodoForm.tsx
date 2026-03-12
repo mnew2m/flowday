@@ -23,13 +23,14 @@ interface TodoFormProps {
   categories: Category[]
   initialValues?: Partial<Todo>
   isEditing?: boolean
+  somedayMode?: boolean
 }
 
 const defaultRecurrence: Recurrence = { type: 'none', interval: 1 }
 
 const inputCls = 'w-full px-4 py-3 text-[16px] text-primary placeholder:text-muted outline-none'
 
-export function TodoForm({ open, onClose, onSubmit, categories, initialValues, isEditing = false }: TodoFormProps) {
+export function TodoForm({ open, onClose, onSubmit, categories, initialValues, isEditing = false, somedayMode = false }: TodoFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? '')
   const [description, setDescription] = useState(initialValues?.description ?? '')
   const [dueDate, setDueDate] = useState(initialValues?.dueDate ? initialValues.dueDate.substring(0, 10) : '')
@@ -63,6 +64,14 @@ export function TodoForm({ open, onClose, onSubmit, categories, initialValues, i
     <Modal open={open} onClose={onClose} title={isEditing ? '할일 수정' : '새 할일'}>
       <div className="px-4 pt-3 pb-6 space-y-4">
 
+        {/* Someday mode notice */}
+        {somedayMode && (
+          <div className="flex gap-1.5 px-1 text-[13px]" style={{ color: 'var(--color-muted)' }}>
+            <span>🌙</span>
+            <span>언젠가 할일은 마감일·알림·반복 없이 저장돼요.<br />추가 후 수정에서 지정할 수 있어요.</span>
+          </div>
+        )}
+
         {/* Title + Description */}
         <div style={sectionStyle}>
           <div style={rowStyle}>
@@ -86,34 +95,36 @@ export function TodoForm({ open, onClose, onSubmit, categories, initialValues, i
         </div>
 
         {/* Date + Reminder */}
-        <div style={sectionStyle}>
-          <div className="flex items-center px-4 py-3" style={rowStyle}>
-            <span className="text-[16px] text-primary flex-1">마감일</span>
-            <button
-              type="button"
-              onClick={() => setShowDatePicker(true)}
-              className="text-[15px] transition-opacity active:opacity-50"
-              style={{ color: dueDate ? 'var(--color-accent)' : 'var(--color-muted)' }}
-            >
-              {dueDate
-                ? format(parseISO(dueDate), 'M월 d일 (E)', { locale: ko })
-                : '날짜 없음'}
-            </button>
+        {!somedayMode && (
+          <div style={sectionStyle}>
+            <div className="flex items-center px-4 py-3" style={rowStyle}>
+              <span className="text-[16px] text-primary flex-1">마감일</span>
+              <button
+                type="button"
+                onClick={() => setShowDatePicker(true)}
+                className="text-[15px] transition-opacity active:opacity-50"
+                style={{ color: dueDate ? 'var(--color-accent)' : 'var(--color-muted)' }}
+              >
+                {dueDate
+                  ? format(parseISO(dueDate), 'M월 d일 (E)', { locale: ko })
+                  : '날짜 없음'}
+              </button>
+            </div>
+            <div className="flex items-center px-4 py-3">
+              <span className="text-[16px] text-primary flex-1">알림</span>
+              <button
+                type="button"
+                onClick={() => setShowTimePicker(true)}
+                className="text-[15px] transition-opacity active:opacity-50"
+                style={{ color: reminderTime ? 'var(--color-accent)' : 'var(--color-muted)' }}
+              >
+                {reminderTime
+                  ? format(new Date(reminderTime), 'M월 d일 HH:mm', { locale: ko })
+                  : '설정 안 함'}
+              </button>
+            </div>
           </div>
-          <div className="flex items-center px-4 py-3">
-            <span className="text-[16px] text-primary flex-1">알림</span>
-            <button
-              type="button"
-              onClick={() => setShowTimePicker(true)}
-              className="text-[15px] transition-opacity active:opacity-50"
-              style={{ color: reminderTime ? 'var(--color-accent)' : 'var(--color-muted)' }}
-            >
-              {reminderTime
-                ? format(new Date(reminderTime), 'M월 d일 HH:mm', { locale: ko })
-                : '설정 안 함'}
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Category */}
         {categories.length > 0 && (
@@ -134,7 +145,7 @@ export function TodoForm({ open, onClose, onSubmit, categories, initialValues, i
         </div>
 
         {/* Recurrence */}
-        <div style={sectionStyle}>
+        {!somedayMode && <div style={sectionStyle}>
           <button
             onClick={() => setShowRecurrence(!showRecurrence)}
             className="w-full flex items-center justify-between px-4 py-3 transition-opacity active:opacity-50"
@@ -162,7 +173,7 @@ export function TodoForm({ open, onClose, onSubmit, categories, initialValues, i
               </div>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Submit */}
         <button
