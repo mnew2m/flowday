@@ -26,6 +26,8 @@ export function TodosPage() {
   const [formOpen, setFormOpen]   = useState(false)
   const [editTodo, setEditTodo]   = useState<Todo | null>(null)
   const [sessionCompleted, setSessionCompleted] = useState<Set<string>>(new Set())
+  const [doneSortKey, setDoneSortKey] = useState<'completedAt' | 'dueDate'>('completedAt')
+  const [doneSortDir, setDoneSortDir] = useState<'desc' | 'asc'>('desc')
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
@@ -40,12 +42,19 @@ export function TodosPage() {
         return todos.filter(t => show(t) && t.dueDate && isFuture(parseISO(t.dueDate)) && !isToday(parseISO(t.dueDate)))
       case 'someday':
         return todos.filter(t => show(t) && !t.dueDate)
-      case 'done':
-        return todos.filter(t => t.completed)
+      case 'done': {
+        const done = todos.filter(t => t.completed)
+        const dir = doneSortDir === 'desc' ? 1 : -1
+        return [...done].sort((a, b) => {
+          const va = (doneSortKey === 'completedAt' ? a.completedAt : a.dueDate) ?? ''
+          const vb = (doneSortKey === 'completedAt' ? b.completedAt : b.dueDate) ?? ''
+          return vb.localeCompare(va) * dir
+        })
+      }
       default:
         return todos
     }
-  }, [todos, filter, todayStr, sessionCompleted])
+  }, [todos, filter, todayStr, sessionCompleted, doneSortKey, doneSortDir])
 
   const overdueCount = todos.filter(t =>
     !t.completed && t.dueDate && isPast(parseISO(t.dueDate)) && !isToday(parseISO(t.dueDate))
@@ -180,6 +189,42 @@ export function TodosPage() {
                     >
                       {count}
                     </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {/* 완료 탭 정렬 */}
+        {viewMode === 'list' && filter === 'done' && (
+          <div className="flex gap-2 mt-2 px-0">
+            {([
+              { id: 'completedAt', label: '완료 한 날짜순' },
+              { id: 'dueDate',     label: '계획 한 날짜순' },
+            ] as const).map(s => {
+              const isActive = doneSortKey === s.id
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    if (isActive) setDoneSortDir(d => d === 'desc' ? 'asc' : 'desc')
+                    else { setDoneSortKey(s.id); setDoneSortDir('desc') }
+                  }}
+                  className="flex items-center gap-1 text-[12px] font-medium px-3 py-1 rounded-full transition-all active:scale-95"
+                  style={
+                    isActive
+                      ? { background: 'var(--color-accent)', color: 'white' }
+                      : { background: 'var(--color-fill)', color: 'var(--color-secondary)' }
+                  }
+                >
+                  {s.label}
+                  {isActive && (
+                    <svg
+                      width="10" height="10" viewBox="0 0 24 24" fill="none"
+                      className={`transition-transform ${doneSortDir === 'asc' ? 'rotate-180' : ''}`}
+                    >
+                      <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   )}
                 </button>
               )
