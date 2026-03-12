@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { subDays, subMonths, startOfMonth, endOfMonth, format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
+import { subDays, subMonths, format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
 import type { Todo, Habit, HabitCompletion, StatsData } from '../types'
 
 export function useStats(todos: Todo[], habits: Habit[], completions: HabitCompletion[]) {
