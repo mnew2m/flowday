@@ -3,10 +3,95 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useCategories } from '../hooks/useCategories'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
+import {
+  DndContext, closestCenter, PointerSensor, TouchSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext, verticalListSortingStrategy,
+  useSortable, arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { Category } from '../types'
 
 const PRESET_COLORS = ['#7c3aed', '#2563eb', '#16a34a', '#d97706', '#dc2626', '#db2777', '#0891b2']
 const PRESET_ICONS  = ['🏠', '💼', '📚', '🏋️', '🎨', '🍎', '✈️', '🎯', '💡', '🎵']
+
+interface SortableRowProps {
+  cat: Category
+  index: number
+  total: number
+  onEdit: () => void
+  onDelete: () => void
+  isEditing: boolean
+  editForm: React.ReactNode
+}
+
+function SortableCategoryRow({ cat, index, total, onEdit, onDelete, isEditing, editForm }: SortableRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id })
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        borderBottom: index < total - 1 ? '0.5px solid var(--color-separator)' : 'none',
+        zIndex: isDragging ? 10 : undefined,
+      }}
+    >
+      {isEditing ? (
+        <div className="px-3 py-3 bg-card">{editForm}</div>
+      ) : (
+        <div className="flex items-center gap-3 px-4 py-3 bg-card">
+          {/* 드래그 핸들 */}
+          <button
+            {...attributes}
+            {...listeners}
+            className="flex-shrink-0 flex flex-col gap-[3px] px-0.5 py-1 touch-none cursor-grab active:cursor-grabbing"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            <span className="block w-4 h-[1.5px] rounded" style={{ background: 'currentColor' }} />
+            <span className="block w-4 h-[1.5px] rounded" style={{ background: 'currentColor' }} />
+            <span className="block w-4 h-[1.5px] rounded" style={{ background: 'currentColor' }} />
+          </button>
+
+          {/* 아이콘 */}
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+            style={{ background: cat.color + '22' }}
+          >
+            {cat.icon}
+          </div>
+
+          {/* 이름 */}
+          <span className="flex-1 text-[15px] text-primary">{cat.name}</span>
+
+          {/* 컬러 도트 */}
+          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: cat.color }} />
+
+          {/* 수정 버튼 */}
+          <button
+            onClick={onEdit}
+            className="ml-2 text-[13px] font-medium transition-opacity active:opacity-50"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            수정
+          </button>
+
+          {/* 삭제 버튼 */}
+          <button
+            onClick={onDelete}
+            className="ml-2 text-[13px] font-medium text-red-500 transition-opacity active:opacity-50"
+          >
+            삭제
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function SettingRow({ label, children, first, last }: { label: string; children: React.ReactNode; first?: boolean; last?: boolean }) {
   return (
@@ -98,12 +183,25 @@ function CategoryForm({ initial, onSave, onCancel }: CatFormProps) {
 export function SettingsPage() {
   const { user, signOut }    = useAuth()
   const { theme, setTheme }  = useTheme()
-  const { categories, addCategory, updateCategory, deleteCategory } = useCategories()
+  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories } = useCategories()
 
   const [signOutConfirm, setSignOutConfirm] = useState(false)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm]   = useState(false)
   const [editingId,   setEditingId]     = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor,   { activationConstraint: { delay: 200, tolerance: 5 } }),
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = categories.findIndex(c => c.id === active.id)
+    const newIndex = categories.findIndex(c => c.id === over.id)
+    reorderCategories(arrayMove(categories, oldIndex, newIndex))
+  }
 
   const handleAdd = async (data: { name: string; color: string; icon: string }) => {
     await addCategory(data)
@@ -203,57 +301,29 @@ export function SettingsPage() {
                 <p className="text-[14px] text-muted">카테고리가 없어요</p>
               </div>
             ) : (
-              categories.map((cat, i) => (
-                <div key={cat.id}>
-                  {/* 수정 폼 인라인 */}
-                  {editingId === cat.id ? (
-                    <div className="px-3 py-3 bg-card" style={{ borderBottom: i < categories.length - 1 ? '0.5px solid var(--color-separator)' : 'none' }}>
-                      <CategoryForm
-                        key={cat.id}
-                        initial={cat}
-                        onSave={data => handleUpdate(cat.id, data)}
-                        onCancel={() => setEditingId(null)}
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className="flex items-center gap-3 px-4 py-3 bg-card"
-                      style={{ borderBottom: i < categories.length - 1 ? '0.5px solid var(--color-separator)' : 'none' }}
-                    >
-                      {/* 아이콘 */}
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
-                        style={{ background: cat.color + '22' }}
-                      >
-                        {cat.icon}
-                      </div>
-
-                      {/* 이름 */}
-                      <span className="flex-1 text-[15px] text-primary">{cat.name}</span>
-
-                      {/* 컬러 도트 */}
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: cat.color }} />
-
-                      {/* 수정 버튼 */}
-                      <button
-                        onClick={() => { setEditingId(cat.id); setShowAddForm(false) }}
-                        className="ml-2 text-[13px] font-medium transition-opacity active:opacity-50"
-                        style={{ color: 'var(--color-accent)' }}
-                      >
-                        수정
-                      </button>
-
-                      {/* 삭제 버튼 */}
-                      <button
-                        onClick={() => setDeleteConfirmId(cat.id)}
-                        className="ml-2 text-[13px] font-medium text-red-500 transition-opacity active:opacity-50"
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                  {categories.map((cat, i) => (
+                    <SortableCategoryRow
+                      key={cat.id}
+                      cat={cat}
+                      index={i}
+                      total={categories.length}
+                      isEditing={editingId === cat.id}
+                      onEdit={() => { setEditingId(cat.id); setShowAddForm(false) }}
+                      onDelete={() => setDeleteConfirmId(cat.id)}
+                      editForm={
+                        <CategoryForm
+                          key={cat.id}
+                          initial={cat}
+                          onSave={data => handleUpdate(cat.id, data)}
+                          onCancel={() => setEditingId(null)}
+                        />
+                      }
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             )}
           </div>
         </section>

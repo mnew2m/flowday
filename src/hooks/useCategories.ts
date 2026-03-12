@@ -4,6 +4,22 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { Category } from '../types'
 
+const orderKey = (userId: string) => `category_order_${userId}`
+
+function applyOrder(cats: Category[], userId: string): Category[] {
+  const raw = localStorage.getItem(orderKey(userId))
+  if (!raw) return cats
+  try {
+    const ids: string[] = JSON.parse(raw)
+    const map = new Map(cats.map(c => [c.id, c]))
+    const ordered = ids.flatMap(id => map.has(id) ? [map.get(id)!] : [])
+    const rest = cats.filter(c => !ids.includes(c.id))
+    return [...ordered, ...rest]
+  } catch {
+    return cats
+  }
+}
+
 export function useCategories() {
   const { user } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
@@ -18,7 +34,7 @@ export function useCategories() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: true })
     if (data) {
-      setCategories(data.map(mapCategory))
+      setCategories(applyOrder(data.map(mapCategory), user.id))
     }
     setLoading(false)
   }, [user])
@@ -57,7 +73,13 @@ export function useCategories() {
     await supabase.from('categories').delete().eq('id', id)
   }
 
-  return { categories, loading, addCategory, updateCategory, deleteCategory, refetch: fetchCategories }
+  const reorderCategories = (newOrder: Category[]) => {
+    if (!user) return
+    setCategories(newOrder)
+    localStorage.setItem(orderKey(user.id), JSON.stringify(newOrder.map(c => c.id)))
+  }
+
+  return { categories, loading, addCategory, updateCategory, deleteCategory, reorderCategories, refetch: fetchCategories }
 }
 
 function mapCategory(row: Record<string, unknown>): Category {
