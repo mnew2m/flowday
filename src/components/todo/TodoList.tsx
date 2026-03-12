@@ -10,13 +10,14 @@ interface TodoListProps {
   onDelete: (id: string) => void
   onEdit: (todo: Todo) => void
   onAdd: () => void
+  onCopy?: (todo: Todo) => void
   emptyIcon?: string
   emptyTitle?: string
   emptyDescription?: string
   emptyCompact?: boolean
 }
 
-export function TodoList({ todos, categories, onComplete, onUncomplete, onDelete, onEdit, onAdd, emptyIcon = '✅', emptyTitle = '할일이 없어요', emptyDescription = '새 할일을 추가해보세요', emptyCompact }: TodoListProps) {
+export function TodoList({ todos, categories, onComplete, onUncomplete, onDelete, onEdit, onAdd, onCopy, emptyIcon = '✅', emptyTitle = '할일이 없어요', emptyDescription = '새 할일을 추가해보세요', emptyCompact }: TodoListProps) {
   if (todos.length === 0) {
     return (
       <EmptyState
@@ -43,6 +44,7 @@ export function TodoList({ todos, categories, onComplete, onUncomplete, onDelete
             onUncomplete={onUncomplete}
             onDelete={onDelete}
             onEdit={onEdit}
+            onCopy={onCopy}
           />
         </div>
       ))}

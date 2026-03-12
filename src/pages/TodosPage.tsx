@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useTodos } from '../hooks/useTodos'
 import { useCategories } from '../hooks/useCategories'
 import { TodoList } from '../components/todo/TodoList'
@@ -123,6 +123,10 @@ export function TodosPage() {
   const [tmpStart,   setTmpStart]   = useState(currentYM)
   const [tmpEnd,     setTmpEnd]     = useState(currentYM)
   const [tmpNoDate,  setTmpNoDate]  = useState(false)
+  const [searchOpen,  setSearchOpen]  = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const [copySource, setCopySource] = useState<Todo | null>(null)
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
@@ -200,6 +204,30 @@ export function TodosPage() {
     setEditTodo(null)
   }
 
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return []
+    return todos.filter(t => {
+      if (t.title.toLowerCase().includes(q)) return true
+      if (t.description?.toLowerCase().includes(q)) return true
+      if (t.tags.some(tag => tag.toLowerCase().includes(q))) return true
+      const cat = categories.find(c => c.id === t.categoryId)
+      if (cat?.name.toLowerCase().includes(q)) return true
+      return false
+    })
+  }, [todos, categories, searchQuery])
+
+  const openSearch = useCallback(() => {
+    setSearchOpen(true)
+    setSearchQuery('')
+    setTimeout(() => searchInputRef.current?.focus(), 50)
+  }, [])
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false)
+    setSearchQuery('')
+  }, [])
+
   const [prefilledDate, setPrefilledDate] = useState<string | undefined>()
   const filterScrollRef = useRef<HTMLDivElement>(null)
 
@@ -215,7 +243,15 @@ export function TodosPage() {
 
   const openAdd = (date?: string) => {
     setEditTodo(null)
+    setCopySource(null)
     setPrefilledDate(date ?? (filter === 'today' ? format(new Date(), 'yyyy-MM-dd') : undefined))
+    setFormOpen(true)
+  }
+
+  const handleCopy = (todo: Todo) => {
+    setEditTodo(null)
+    setCopySource(todo)
+    setPrefilledDate(undefined)
     setFormOpen(true)
   }
 
@@ -223,65 +259,119 @@ export function TodosPage() {
     <div className="pt-safe">
       {/* 헤더 */}
       <div className="px-5 pt-3 pb-2">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-[34px] font-bold text-primary tracking-[-0.5px] leading-tight">할일</h1>
-            {overdueCount > 0 && (
-              <p className="text-[13px] text-red-500 mt-0.5">기한 초과 {overdueCount}개</p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 mb-1">
-            {/* 뷰 전환 토글 */}
+        {searchOpen ? (
+          /* 검색 모드 헤더 */
+          <div className="flex items-center gap-2 py-1">
             <div
-              className="flex p-0.5 rounded-lg"
+              className="flex-1 flex items-center gap-2 px-3 h-10 rounded-xl"
               style={{ background: 'var(--color-fill)' }}
             >
-              <button
-                onClick={() => setViewMode('list')}
-                className="w-8 h-8 flex items-center justify-center rounded-md transition-all active:opacity-60"
-                style={viewMode === 'list'
-                  ? { background: 'var(--color-card)', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }
-                  : { color: 'var(--color-muted)' }
-                }
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                  <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
-                    stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className="w-8 h-8 flex items-center justify-center rounded-md transition-all active:opacity-60"
-                style={viewMode === 'calendar'
-                  ? { background: 'var(--color-card)', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }
-                  : { color: 'var(--color-muted)' }
-                }
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </button>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--color-muted)', flexShrink: 0 }}>
+                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="할일 검색..."
+                className="flex-1 bg-transparent text-[15px] text-primary placeholder-muted outline-none"
+                style={{ color: 'var(--color-primary)' }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="flex-shrink-0 active:opacity-50">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" fill="var(--color-muted)" opacity="0.4"/>
+                    <path d="M15 9l-6 6M9 9l6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              )}
             </div>
-
-            {/* 추가 버튼 (캘린더뷰에서는 숨김) */}
-            {viewMode === 'list' && (
-              <button
-                onClick={() => openAdd()}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 active:opacity-70 shadow-card"
-                style={{ background: 'var(--color-accent)' }}
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M9 3v12M3 9h12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-                </svg>
-              </button>
-            )}
+            <button
+              onClick={closeSearch}
+              className="text-[15px] font-medium flex-shrink-0 active:opacity-50"
+              style={{ color: 'var(--color-accent)' }}
+            >
+              취소
+            </button>
           </div>
-        </div>
+        ) : (
+          /* 일반 헤더 */
+          <>
+            <div className="flex items-end justify-between">
+              <div>
+                <h1 className="text-[34px] font-bold text-primary tracking-[-0.5px] leading-tight">할일</h1>
+                {overdueCount > 0 && (
+                  <p className="text-[13px] text-red-500 mt-0.5">기한 초과 {overdueCount}개</p>
+                )}
+              </div>
 
-        {/* 리스트 뷰일 때만 필터 표시 */}
-        {viewMode === 'list' && (
+              <div className="flex items-center gap-2 mb-1">
+                {/* 검색 버튼 */}
+                <button
+                  onClick={openSearch}
+                  className="w-9 h-9 flex items-center justify-center rounded-full transition-all active:opacity-60"
+                  style={{ background: 'var(--color-fill)' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+
+                {/* 뷰 전환 토글 */}
+                <div
+                  className="flex p-0.5 rounded-lg"
+                  style={{ background: 'var(--color-fill)' }}
+                >
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className="w-8 h-8 flex items-center justify-center rounded-md transition-all active:opacity-60"
+                    style={viewMode === 'list'
+                      ? { background: 'var(--color-card)', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }
+                      : { color: 'var(--color-muted)' }
+                    }
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                        stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('calendar')}
+                    className="w-8 h-8 flex items-center justify-center rounded-md transition-all active:opacity-60"
+                    style={viewMode === 'calendar'
+                      ? { background: 'var(--color-card)', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }
+                      : { color: 'var(--color-muted)' }
+                    }
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* 추가 버튼 (캘린더뷰에서는 숨김) */}
+                {viewMode === 'list' && (
+                  <button
+                    onClick={() => openAdd()}
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 active:opacity-70 shadow-card"
+                    style={{ background: 'var(--color-accent)' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path d="M9 3v12M3 9h12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 리스트 뷰일 때만 필터 표시 (검색 중엔 숨김) */}
+        {viewMode === 'list' && !searchOpen && (
           <div ref={filterScrollRef} className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
             {FILTERS.map(f => {
               const count =
@@ -318,7 +408,7 @@ export function TodosPage() {
           </div>
         )}
         {/* 완료 탭 정렬 + 범위 필터 */}
-        {viewMode === 'list' && filter === 'done' && (
+        {viewMode === 'list' && filter === 'done' && !searchOpen && (
           <>
             <div className="flex gap-2 mt-2 px-0">
               {([
@@ -393,6 +483,26 @@ export function TodosPage() {
             style={{ borderColor: 'var(--color-accent)', borderTopColor: 'transparent' }}
           />
         </div>
+      ) : searchOpen ? (
+        <div className="px-4">
+          {searchQuery.trim() === '' ? (
+            <p className="text-center text-[14px] py-16" style={{ color: 'var(--color-muted)' }}>검색어를 입력해주세요</p>
+          ) : (
+            <TodoList
+              todos={searchResults}
+              categories={categories}
+              onComplete={handleComplete}
+              onUncomplete={handleUncomplete}
+              onDelete={deleteTodo}
+              onEdit={handleEdit}
+              onAdd={openAdd}
+              onCopy={handleCopy}
+              emptyIcon="🔍"
+              emptyTitle="검색 결과가 없어요"
+              emptyDescription={`'${searchQuery}'에 해당하는 할일이 없습니다`}
+            />
+          )}
+        </div>
       ) : viewMode === 'calendar' ? (
         <CalendarView
           todos={todos}
@@ -455,14 +565,22 @@ export function TodosPage() {
       )}
 
       <TodoForm
-        key={editTodo?.id ?? (prefilledDate ?? 'new')}
+        key={editTodo?.id ?? (copySource ? `copy_${copySource.id}` : (prefilledDate ?? 'new'))}
         open={formOpen}
-        onClose={() => { setFormOpen(false); setEditTodo(null); setPrefilledDate(undefined) }}
+        onClose={() => { setFormOpen(false); setEditTodo(null); setCopySource(null); setPrefilledDate(undefined) }}
         onSubmit={handleFormSubmit}
         categories={categories}
-        initialValues={editTodo ?? (prefilledDate ? { dueDate: prefilledDate } : undefined)}
+        initialValues={
+          editTodo
+            ? editTodo
+            : copySource
+            ? { title: copySource.title, description: copySource.description, categoryId: copySource.categoryId, tags: copySource.tags, recurrence: copySource.recurrence }
+            : prefilledDate
+            ? { dueDate: prefilledDate }
+            : undefined
+        }
         isEditing={!!editTodo}
-        somedayMode={!editTodo && filter === 'someday'}
+        somedayMode={!editTodo && !copySource && filter === 'someday'}
       />
 
       {/* 완료 탭 범위 선택 모달 */}

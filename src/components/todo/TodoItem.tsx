@@ -10,12 +10,13 @@ interface TodoItemProps {
   onUncomplete: (id: string) => void
   onDelete: (id: string) => void
   onEdit: (todo: Todo) => void
+  onCopy?: (todo: Todo) => void
 }
 
 const SWIPE_THRESHOLD = 72   // px: 이 이상 당기면 삭제 버튼 노출
 const SWIPE_CONFIRM   = 160  // px: 이 이상 당기면 바로 confirm 오픈
 
-export function TodoItem({ todo, categories, onComplete, onUncomplete, onDelete, onEdit }: TodoItemProps) {
+export function TodoItem({ todo, categories, onComplete, onUncomplete, onDelete, onEdit, onCopy }: TodoItemProps) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [translateX, setTranslateX] = useState(0)
   const [revealed, setRevealed] = useState(false)
@@ -177,6 +178,20 @@ export function TodoItem({ todo, categories, onComplete, onUncomplete, onDelete,
               ))}
             </div>
           </button>
+
+          {/* 복사 버튼 (onCopy 있을 때만) */}
+          {onCopy && (
+            <button
+              onClick={e => { e.stopPropagation(); if (revealed) { closeSwipe(); return } onCopy(todo) }}
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-opacity active:opacity-50"
+              style={{ color: 'var(--color-muted)' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+              </svg>
+            </button>
+          )}
 
           {/* 휴지통 버튼 */}
           <button
