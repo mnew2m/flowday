@@ -167,7 +167,13 @@ export function TodoItem({ todo, categories, onComplete, onUncomplete, onDelete,
                 </span>
               )}
               {todo.tags.map(tag => (
-                <span key={tag} className="text-[12px] text-secondary">#{tag}</span>
+                <span
+                  key={tag}
+                  className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                  style={{ background: 'var(--color-fill)', color: 'var(--color-secondary)' }}
+                >
+                  #{tag}
+                </span>
               ))}
             </div>
           </button>
