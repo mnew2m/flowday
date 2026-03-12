@@ -163,6 +163,18 @@ export function TodosPage() {
     }
   }, [todos, filter, todayStr, sessionCompleted, doneSortKey, doneSortDir, doneRangeStart, doneRangeEnd, doneNoDate])
 
+  const categoryGroups = useMemo(() => {
+    if (filtered.length === 0) return []
+    const groups: { cat?: typeof categories[0]; todos: typeof filtered }[] = []
+    for (const cat of categories) {
+      const catTodos = filtered.filter(t => t.categoryId === cat.id)
+      if (catTodos.length > 0) groups.push({ cat, todos: catTodos })
+    }
+    const noCategory = filtered.filter(t => !t.categoryId)
+    if (noCategory.length > 0) groups.push({ todos: noCategory })
+    return groups
+  }, [filtered, categories])
+
   const doneGroups = useMemo(() => {
     if (filter !== 'done') return []
     const groups: { label: string; todos: Todo[] }[] = []
@@ -530,38 +542,95 @@ export function TodosPage() {
               emptyDescription="이 기간에 완료한 할일이 없습니다"
             />
           ) : (
-            doneGroups.map(group => (
-              <div key={group.label}>
-                <p className="text-[13px] font-semibold mb-2 px-1" style={{ color: 'var(--color-secondary)' }}>
-                  {group.label}
-                </p>
-                <TodoList
-                  todos={group.todos}
-                  categories={categories}
-                  onComplete={handleComplete}
-                  onUncomplete={handleUncomplete}
-                  onDelete={deleteTodo}
-                  onEdit={handleEdit}
-                  onAdd={openAdd}
-                />
-              </div>
-            ))
+            doneGroups.map(group => {
+              const catGroups: { cat?: typeof categories[0]; todos: typeof group.todos }[] = []
+              for (const cat of categories) {
+                const catTodos = group.todos.filter(t => t.categoryId === cat.id)
+                if (catTodos.length > 0) catGroups.push({ cat, todos: catTodos })
+              }
+              const noCategory = group.todos.filter(t => !t.categoryId)
+              if (noCategory.length > 0) catGroups.push({ todos: noCategory })
+              return (
+                <div key={group.label}>
+                  <p className="text-[13px] font-semibold mb-2 px-1" style={{ color: 'var(--color-secondary)' }}>
+                    {group.label}
+                  </p>
+                  <div className="space-y-3">
+                    {catGroups.map(cg => (
+                      <div key={cg.cat?.id ?? 'none'}>
+                        <div className="flex items-center gap-1.5 mb-1.5 px-1">
+                          {cg.cat ? (
+                            <span className="text-[12px] font-semibold" style={{ color: cg.cat.color }}>
+                              {cg.cat.icon} {cg.cat.name}
+                            </span>
+                          ) : (
+                            <span className="text-[12px] font-semibold" style={{ color: 'var(--color-muted)' }}>
+                              카테고리 없음
+                            </span>
+                          )}
+                        </div>
+                        <TodoList
+                          todos={cg.todos}
+                          categories={categories}
+                          onComplete={handleComplete}
+                          onUncomplete={handleUncomplete}
+                          onDelete={deleteTodo}
+                          onEdit={handleEdit}
+                          onAdd={openAdd}
+                          hideAddAction
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })
           )}
         </div>
       ) : (
         <div className="px-4">
-          <TodoList
-            todos={filtered}
-            categories={categories}
-            onComplete={handleComplete}
-            onUncomplete={handleUncomplete}
-            onDelete={deleteTodo}
-            onEdit={handleEdit}
-            onAdd={openAdd}
-            emptyIcon={filter === 'someday' ? '🌙' : '✅'}
-            emptyTitle={filter === 'someday' ? '언젠가 할 일이 없어요' : '할일이 없어요'}
-            emptyDescription={filter === 'someday' ? '마감일 없이 할일을 추가하면 여기에 모여요' : '새 할일을 추가해보세요'}
-          />
+          {categoryGroups.length === 0 ? (
+            <TodoList
+              todos={[]}
+              categories={categories}
+              onComplete={handleComplete}
+              onUncomplete={handleUncomplete}
+              onDelete={deleteTodo}
+              onEdit={handleEdit}
+              onAdd={openAdd}
+              emptyIcon={filter === 'someday' ? '🌙' : '✅'}
+              emptyTitle={filter === 'someday' ? '언젠가 할 일이 없어요' : '할일이 없어요'}
+              emptyDescription={filter === 'someday' ? '마감일 없이 할일을 추가하면 여기에 모여요' : '새 할일을 추가해보세요'}
+            />
+          ) : (
+            <div className="space-y-4">
+              {categoryGroups.map(group => (
+                <div key={group.cat?.id ?? 'none'}>
+                  <div className="flex items-center gap-1.5 mb-2 px-1">
+                    {group.cat ? (
+                      <span className="text-[12px] font-semibold" style={{ color: group.cat.color }}>
+                        {group.cat.icon} {group.cat.name}
+                      </span>
+                    ) : (
+                      <span className="text-[12px] font-semibold" style={{ color: 'var(--color-muted)' }}>
+                        카테고리 없음
+                      </span>
+                    )}
+                  </div>
+                  <TodoList
+                    todos={group.todos}
+                    categories={categories}
+                    onComplete={handleComplete}
+                    onUncomplete={handleUncomplete}
+                    onDelete={deleteTodo}
+                    onEdit={handleEdit}
+                    onAdd={openAdd}
+                    hideAddAction
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
