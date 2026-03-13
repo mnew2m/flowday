@@ -75,7 +75,7 @@ export function HabitForm({ open, onClose, onSubmit, categories, initialValues }
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder="설명 (선택)"
+            placeholder="메모"
             rows={2}
             className={`${inputCls} resize-none`}
             style={{ background: 'transparent' }}
