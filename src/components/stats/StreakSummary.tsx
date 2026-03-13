@@ -1,12 +1,15 @@
-import type { Habit, HabitCompletion } from '../../types'
+import type { Habit, HabitCompletion, Category } from '../../types'
 import { calculateStreak } from '../../utils/streaks'
+
+const DEFAULT_COLOR = '#7c3aed'
 
 interface StreakSummaryProps {
   habits: Habit[]
+  categories: Category[]
   getCompletions: (habitId: string) => HabitCompletion[]
 }
 
-export function StreakSummary({ habits, getCompletions }: StreakSummaryProps) {
+export function StreakSummary({ habits, categories, getCompletions }: StreakSummaryProps) {
   const activeHabits = habits.filter(h => !h.archived)
 
   const streaks = activeHabits.map(h => ({
@@ -37,7 +40,7 @@ export function StreakSummary({ habits, getCompletions }: StreakSummaryProps) {
                   className="h-full rounded-full transition-all"
                   style={{
                     width: `${(longest / maxLongest) * 100}%`,
-                    backgroundColor: habit.color,
+                    backgroundColor: categories.find(c => c.id === habit.categoryId)?.color ?? DEFAULT_COLOR,
                   }}
                 />
               </div>

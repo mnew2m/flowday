@@ -17,11 +17,14 @@ interface HabitCardProps {
   onDetail: (habit: Habit) => void
 }
 
+const DEFAULT_COLOR = '#7c3aed'
+
 export function HabitCard({ habit, completions, categories, isCompleted, onToggle, onEdit, onDelete, onArchive, onDetail }: HabitCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const { current, longest } = calculateStreak(completions, habit)
   const weekDays = getLast7DaysStatus(completions, habit)
   const category = categories.find(c => c.id === habit.categoryId)
+  const habitColor = category?.color ?? DEFAULT_COLOR
 
   return (
     <>
@@ -32,7 +35,7 @@ export function HabitCard({ habit, completions, categories, isCompleted, onToggl
         {/* Color bar + header */}
         <div
           className="px-4 pt-3.5 pb-3 flex items-start gap-3 cursor-pointer active:opacity-70"
-          style={{ borderLeft: `4px solid ${habit.color}` }}
+          style={{ borderLeft: `4px solid ${habitColor}` }}
           onClick={() => onDetail(habit)}
         >
           <div className="flex-1 min-w-0">
@@ -93,7 +96,7 @@ export function HabitCard({ habit, completions, categories, isCompleted, onToggl
         >
           <div className="space-y-2">
             <StreakDisplay current={current} longest={longest} />
-            <WeeklyView days={weekDays} color={habit.color} />
+            <WeeklyView days={weekDays} color={habitColor} />
           </div>
 
           {/* Check button */}
@@ -102,7 +105,7 @@ export function HabitCard({ habit, completions, categories, isCompleted, onToggl
             className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-all active:scale-90 shadow-card"
             style={
               isCompleted
-                ? { background: habit.color, boxShadow: `0 4px 16px ${habit.color}55` }
+                ? { background: habitColor, boxShadow: `0 4px 16px ${habitColor}55` }
                 : { background: 'var(--color-fill)', color: 'var(--color-muted)' }
             }
           >

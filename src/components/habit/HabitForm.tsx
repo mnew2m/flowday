@@ -11,7 +11,6 @@ interface HabitFormProps {
   onSubmit: (data: {
     title: string
     description?: string
-    color: string
     categoryId?: string
     recurrence: Recurrence
     reminderTime?: string
@@ -20,11 +19,6 @@ interface HabitFormProps {
   initialValues?: Partial<Habit>
 }
 
-const PRESET_COLORS = [
-  '#7c3aed', '#2563eb', '#16a34a', '#d97706',
-  '#dc2626', '#db2777', '#0891b2', '#65a30d',
-]
-
 const defaultRecurrence: Recurrence = { type: 'daily', interval: 1 }
 
 const inputCls = 'w-full px-4 py-3 text-[16px] text-primary placeholder:text-muted outline-none'
@@ -32,7 +26,6 @@ const inputCls = 'w-full px-4 py-3 text-[16px] text-primary placeholder:text-mut
 export function HabitForm({ open, onClose, onSubmit, categories, initialValues }: HabitFormProps) {
   const [title,       setTitle]       = useState(initialValues?.title ?? '')
   const [description, setDescription] = useState(initialValues?.description ?? '')
-  const [color,       setColor]       = useState(initialValues?.color ?? PRESET_COLORS[0])
   const [categoryId,  setCategoryId]  = useState(initialValues?.categoryId)
   const [recurrence,  setRecurrence]  = useState<Recurrence>(initialValues?.recurrence ?? defaultRecurrence)
   const [reminderTime, setReminderTime] = useState(initialValues?.reminderTime ?? '')
@@ -44,7 +37,6 @@ export function HabitForm({ open, onClose, onSubmit, categories, initialValues }
     onSubmit({
       title: title.trim(),
       description: description.trim() || undefined,
-      color,
       categoryId,
       recurrence,
       reminderTime: reminderTime || undefined,
@@ -80,27 +72,6 @@ export function HabitForm({ open, onClose, onSubmit, categories, initialValues }
             className={`${inputCls} resize-none`}
             style={{ background: 'transparent' }}
           />
-        </div>
-
-        {/* Color */}
-        <div style={sectionStyle}>
-          <div className="px-4 py-3">
-            <p className="text-[12px] font-semibold uppercase tracking-wider text-secondary mb-2.5">색상</p>
-            <div className="flex gap-2.5 flex-wrap">
-              {PRESET_COLORS.map(c => (
-                <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  className="w-8 h-8 rounded-full transition-transform active:scale-90"
-                  style={{
-                    backgroundColor: c,
-                    outline: color === c ? `2px solid ${c}` : 'none',
-                    outlineOffset: '2px',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Reminder */}

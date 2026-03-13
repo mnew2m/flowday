@@ -40,7 +40,6 @@ export interface Habit {
   categoryId?: string
   title: string
   description?: string
-  color: string
   recurrence: Recurrence
   reminderTime?: string
   archived: boolean

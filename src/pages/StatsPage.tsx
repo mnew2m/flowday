@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTodos } from '../hooks/useTodos'
 import { useHabits } from '../hooks/useHabits'
+import { useCategories } from '../hooks/useCategories'
 import { useStats } from '../hooks/useStats'
 import { CompletionChart } from '../components/stats/CompletionChart'
 import { StreakSummary } from '../components/stats/StreakSummary'
@@ -10,6 +11,7 @@ type Period = 'week' | 'month'
 export function StatsPage() {
   const { todos } = useTodos()
   const { habits, completions, getCompletionsForHabit } = useHabits()
+  const { categories } = useCategories()
   const { weeklyTodoStats, monthlyTodoStats, habitWeeklyStats, overallStats } = useStats(todos, habits, completions)
   const [period, setPeriod] = useState<Period>('week')
 
@@ -66,7 +68,7 @@ export function StatsPage() {
           title={`${period === 'week' ? '주간' : '월간'} 할일 완료율`}
         />
         <CompletionChart data={habitWeeklyStats} title="이번 주 습관 완료율" />
-        <StreakSummary habits={habits} getCompletions={getCompletionsForHabit} />
+        <StreakSummary habits={habits} categories={categories} getCompletions={getCompletionsForHabit} />
       </div>
 
       <div className="h-6" />

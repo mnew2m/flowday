@@ -7,17 +7,21 @@ import { HabitList } from '../components/habit/HabitList'
 import { HabitForm } from '../components/habit/HabitForm'
 import { Modal } from '../components/common/Modal'
 import { todayString } from '../utils/dateHelpers'
-import type { Habit, HabitCompletion } from '../types'
+import type { Habit, HabitCompletion, Category } from '../types'
 
 type Tab = 'active' | 'archived'
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
 
-function HabitDetailSheet({ habit, completions, onToggle }: {
+const DETAIL_DEFAULT_COLOR = '#7c3aed'
+
+function HabitDetailSheet({ habit, completions, onToggle, categories }: {
   habit: Habit
   completions: HabitCompletion[]
   onToggle: (habitId: string, date: string) => void
+  categories: Category[]
 }) {
+  const habitColor = categories.find(c => c.id === habit.categoryId)?.color ?? DETAIL_DEFAULT_COLOR
   const today = todayString()
   const [calMonth, setCalMonth] = useState(() => format(new Date(), 'yyyy-MM'))
 
@@ -85,7 +89,7 @@ function HabitDetailSheet({ habit, completions, onToggle }: {
                 disabled={isDisabled}
                 className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium transition-all active:scale-90 disabled:cursor-default"
                 style={{
-                  background: isCompleted ? habit.color : isToday ? 'color-mix(in srgb, var(--color-accent) 12%, transparent)' : 'transparent',
+                  background: isCompleted ? habitColor : isToday ? 'color-mix(in srgb, var(--color-accent) 12%, transparent)' : 'transparent',
                   color: isCompleted ? 'white' : isDisabled ? 'var(--color-border)' : isToday ? 'var(--color-accent)' : 'var(--color-primary)',
                   border: isToday && !isCompleted ? `1.5px solid var(--color-accent)` : 'none',
                   fontWeight: isToday ? 600 : 400,
@@ -101,7 +105,7 @@ function HabitDetailSheet({ habit, completions, onToggle }: {
       {/* 완료 현황 요약 */}
       <div className="mt-4 pt-4 flex gap-4" style={{ borderTop: '0.5px solid var(--color-separator)' }}>
         <div className="flex-1 text-center">
-          <p className="text-[22px] font-bold" style={{ color: habit.color }}>
+          <p className="text-[22px] font-bold" style={{ color: habitColor }}>
             {completions.filter(c => c.completedDate.startsWith(calMonth)).length}
           </p>
           <p className="text-[12px] text-secondary mt-0.5">이번 달 완료</p>
@@ -300,6 +304,7 @@ export function HabitsPage() {
             habit={detailHabit}
             completions={getCompletionsForHabit(detailHabit.id)}
             onToggle={toggleCompletion}
+            categories={categories}
           />
         )}
       </Modal>

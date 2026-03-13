@@ -40,7 +40,6 @@ export function useHabits() {
   const addHabit = async (input: {
     title: string
     description?: string
-    color: string
     categoryId?: string
     recurrence: Recurrence
     reminderTime?: string
@@ -53,7 +52,6 @@ export function useHabits() {
       categoryId: input.categoryId,
       title: input.title,
       description: input.description,
-      color: input.color,
       recurrence: input.recurrence,
       reminderTime: input.reminderTime,
       archived: false,
@@ -130,7 +128,6 @@ function mapHabit(row: Record<string, unknown>): Habit {
     categoryId: row.category_id as string | undefined,
     title: row.title as string,
     description: row.description as string | undefined,
-    color: row.color as string,
     recurrence: {
       type: (row.recurrence_type as Recurrence['type']) ?? 'daily',
       interval: 1,
@@ -158,7 +155,6 @@ function toHabitRow(habit: Habit) {
     category_id: habit.categoryId,
     title: habit.title,
     description: habit.description,
-    color: habit.color,
     recurrence_type: habit.recurrence.type,
     recurrence_days_of_week: habit.recurrence.daysOfWeek,
     reminder_time: habit.reminderTime,
@@ -171,7 +167,6 @@ function toPartialHabitRow(input: Partial<Omit<Habit, 'id' | 'userId' | 'created
   const row: Record<string, unknown> = {}
   if (input.title !== undefined) row.title = input.title
   if (input.description !== undefined) row.description = input.description
-  if (input.color !== undefined) row.color = input.color
   if (input.categoryId !== undefined) row.category_id = input.categoryId
   if (input.recurrence !== undefined) {
     row.recurrence_type = input.recurrence.type
